@@ -22,10 +22,10 @@ Only Docker is required.
 docker compose up --build
 ```
 
-| What | URL |
-|------|-----|
-| UI | http://localhost:3000 |
-| API | http://localhost:8080 |
+| What | URL                   |
+| ---- | --------------------- |
+| UI   | http://localhost:3000 |
+| API  | http://localhost:8080 |
 
 Data lives in the named volume `pgdata`, so `docker compose down` followed by `docker compose up`
 keeps everything. `docker compose down -v` wipes it.
@@ -34,11 +34,11 @@ keeps everything. `docker compose down -v` wipes it.
 
 All have defaults; override them in the shell or a `.env` file (see `.env.example`).
 
-| Variable | Default | Meaning |
-|----------|---------|---------|
-| `HOLD_DURATION_SECONDS` | `600` | How long a seat is held before it is released |
-| `ConnectionStrings__DefaultConnection` | set in compose | PostgreSQL connection string used by the backend |
-| `API_BASE_URL` | `http://localhost:8080` | Backend URL used by the **browser**; read by the frontend container at start-up (restart to change, no rebuild) |
+| Variable                               | Default                 | Meaning                                                                                                         |
+| -------------------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `HOLD_DURATION_SECONDS`                | `600`                   | How long a seat is held before it is released                                                                   |
+| `ConnectionStrings__DefaultConnection` | set in compose          | PostgreSQL connection string used by the backend                                                                |
+| `API_BASE_URL`                         | `http://localhost:8080` | Backend URL used by the **browser**; read by the frontend container at start-up (restart to change, no rebuild) |
 
 Example: `HOLD_DURATION_SECONDS=30 docker compose up --build` to watch expiry quickly.
 
@@ -50,7 +50,7 @@ Example: `HOLD_DURATION_SECONDS=30 docker compose up --build` to watch expiry qu
 4. **ভর্তি ফি দিন** confirms the admission (no real payment); **বাতিল** cancels and releases the seat.
 
 Seat counts and your applications refresh automatically every 3 seconds; when a countdown reaches
-zero the application flips to *মেয়াদ শেষ* and the pay button is disabled without reloading.
+zero the application flips to _মেয়াদ শেষ_ and the pay button is disabled without reloading.
 
 ## Tests
 
@@ -68,7 +68,6 @@ throw-away database, so application data is untouched. Highlights:
 - `Confirming_the_same_hold_many_times_counts_the_seat_once`
 - `An_expired_hold_frees_its_seat_without_any_api_call_and_cannot_be_confirmed`
 - `Two_backend_processes_sharing_one_database_never_oversell` (bonus)
-- `Data_survives_a_backend_restart`, ownership/validation/contract tests
 
 The concurrency tests need a real database on purpose: an in-memory provider has no row locks and
 would "pass" without proving anything.
@@ -85,16 +84,16 @@ npm test
 
 Base URL `http://localhost:8080`, JSON in/out. The student is identified by the `X-Student-Id` header.
 
-| # | Method & path | Notes |
-|---|---------------|-------|
-| 1 | `POST /classes` | `{name, totalSeats}` → `201 {id, name, totalSeats}` |
-| 2 | `GET /classes` | list with `heldSeats`, `confirmedSeats`, `availableSeats` |
-| 3 | `GET /classes/{classId}` | one class |
-| 4 | `POST /classes/{classId}/holds` | header `X-Student-Id` → `201`; `409` if no seat |
-| 5 | `GET /holds/{holdId}` | `HELD` / `CONFIRMED` / `EXPIRED` / `CANCELLED` |
-| 6 | `POST /holds/{holdId}/confirm` | header `X-Student-Id` → `200 {holdId, status}` (idempotent) |
-| 7 | `DELETE /holds/{holdId}` | header `X-Student-Id` → `204` |
-| 8 | `GET /me/holds` | header `X-Student-Id` |
+| #   | Method & path                   | Notes                                                       |
+| --- | ------------------------------- | ----------------------------------------------------------- |
+| 1   | `POST /classes`                 | `{name, totalSeats}` → `201 {id, name, totalSeats}`         |
+| 2   | `GET /classes`                  | list with `heldSeats`, `confirmedSeats`, `availableSeats`   |
+| 3   | `GET /classes/{classId}`        | one class                                                   |
+| 4   | `POST /classes/{classId}/holds` | header `X-Student-Id` → `201`; `409` if no seat             |
+| 5   | `GET /holds/{holdId}`           | `HELD` / `CONFIRMED` / `EXPIRED` / `CANCELLED`              |
+| 6   | `POST /holds/{holdId}/confirm`  | header `X-Student-Id` → `200 {holdId, status}` (idempotent) |
+| 7   | `DELETE /holds/{holdId}`        | header `X-Student-Id` → `204`                               |
+| 8   | `GET /me/holds`                 | header `X-Student-Id`                                       |
 
 Errors are JSON: `{ "error": "NO_SEATS_AVAILABLE", "message": "…" }`. Full list of status codes and
 the reasoning behind them is in `ASSUMPTIONS.md`.
