@@ -1,0 +1,62 @@
+# Start everything:   docker compose up --build
+# Run backend tests:  docker compose --profile test run --rm backend-tests
+# Stop (keep data):   docker compose down        |  Stop and wipe data:  docker compose down -v
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-school_admission}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - pgdata:/var/lib/postgresql/data # named volume: data survives `docker compose down` + `up`
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    # No host port is published on purpose: it avoids clashing with a PostgreSQL already running
+    # on the reviewer's machine. Only the backend talks to it, over the compose network.
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-school_admission};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+      HOLD_DURATION_SECONDS: ${HOLD_DURATION_SECONDS:-600}
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      # URL the *browser* uses to reach the backend (not a compose-internal hostname).
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:8080}
+    ports:
+      - "3000:80"
+
+  backend-tests:
+    profiles: ["test"]
+    build:
+      context: ./backend
+      target: test
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Admin connection; the tests create and drop their own throw-away database.
+      TEST_DB_CONNECTION: Host=postgres;Port=5432;Database=postgres;Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}
+
+volumes:
+  pgdata:
